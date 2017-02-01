@@ -1,0 +1,10 @@
+exclude:
+- log/**/*
+name: packaged-0.0.1-SNAPSHOT
+before:
+- echo this is before - @{name}
+- echo this is also before
+package: echo @{name}.tar.gz @{files}
+after:
+- echo this is after - @{name}
+- echo this is also after @{files}
