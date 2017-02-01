@@ -1,17 +1,29 @@
+require "yaml"
+
 module RailsPackager
   class Runner
-    attr_reader :includes, :excludes, :dir, :name, :before, :package, :after
+    attr_reader :includes, :excludes, :env, :dir, :name, :before, :package, :after
+
+    DEFAULT_CONFIG = {
+      env: {},
+      exclude: ["**/.git".freeze].freeze,
+      before: [
+        [{ "RAILS_ENV".freeze => "production".freeze }, "bundle exec rake assets:precompile".freeze].freeze
+      ],
+      package: "tar --no-recursion -zcvf @{name}.tar.gz @{files}".freeze
+    }.freeze
 
     def initialize(opts)
-      @includes = nil
-      @excludes = ["**/.git"]
       @dir = opts.fetch(:dir)
-      @name = File.basename File.realpath(dir)
-      @before = [
-        RailsPackager::Command.precompile_assets(self)
-      ]
-      @package = RailsPackager::Command.tarball(self)
-      @after = []
+
+      config =
+        if opts[:config]
+          YAML.load_file(opts[:config])
+        else
+          DEFAULT_CONFIG
+        end
+
+      load_config(config)
     end
 
     def files
@@ -29,6 +41,19 @@ module RailsPackager
 
     def commands
       before + [package] + after
+    end
+
+    private
+
+    def load_config(config)
+      config = DEFAULT_CONFIG.merge(config.symbolize_keys)
+      @includes = config[:include]
+      @excludes = config[:exclude]
+      @env = config[:env]
+      @name = config.fetch(:name) { File.basename(File.realpath(dir)) }
+      @before = config.fetch(:before, []).map { |x| RailsPackager::Command.parse(self, x) }
+      @after = config.fetch(:after, []).map { |x| RailsPackager::Command.parse(self, x) }
+      @package = RailsPackager::Command.parse(self, config[:package])
     end
   end
 end

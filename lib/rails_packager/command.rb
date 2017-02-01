@@ -1,6 +1,6 @@
 module RailsPackager
   class Command
-    attr_reader :name, :env
+    attr_reader :name
 
     def initialize(name, *args, opts)
       @name = name
@@ -14,6 +14,10 @@ module RailsPackager
       @dir || @runner.dir
     end
 
+    def env
+      @runner.env.merge(@env)
+    end
+
     def args
       @args.map do |arg|
         result = arg.dup
@@ -24,12 +28,9 @@ module RailsPackager
       end.flatten
     end
 
-    def self.precompile_assets(runner)
-      new("bundle", "exec", "rake", "assets:precompile", runner: runner, env: { "RAILS_ENV" => "production" })
-    end
-
-    def self.tarball(runner)
-      new("tar", "--no-recursion", "-zcvf", "@{name}.tar.gz", "@{files}", runner: runner, env: {})
+    def self.parse(runner, value)
+      parsed = CommandParser.parse(value)
+      new(parsed.name, *parsed.args, runner: runner, env: parsed.env)
     end
   end
 end

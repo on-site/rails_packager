@@ -1,6 +1,9 @@
 exclude:
 - log/**/*
 name: packaged-0.0.1-SNAPSHOT
+env:
+  EXAMPLE: first env var
+  EXAMPLE_2: second env var
 before:
 - echo this is before - @{name}
 - echo this is also before
