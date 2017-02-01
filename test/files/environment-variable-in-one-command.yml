@@ -1,0 +1,4 @@
+before:
+- - ENV_VAR: env value
+  - command with_env
+- command without_env

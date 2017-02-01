@@ -22,7 +22,7 @@ module RailsPackager
       @args.map do |arg|
         result = arg.dup
         result["@{name}"] = @runner.name if result["@{name}"]
-        raise "@{files} must be a singular argument" if result["@{files}"] && result != "@{files}"
+        raise ArgumentError, "@{files} must be a singular argument" if result["@{files}"] && result != "@{files}"
         result = @runner.files if result == "@{files}"
         result
       end.flatten

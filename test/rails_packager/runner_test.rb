@@ -85,21 +85,56 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
     refute_includes runner.files, "log/.keep"
   end
 
-  test "customized with environment variable in one command" do
+  test "environment variable in one command" do
+    runner = RailsPackager::Runner.new(config: config_file("environment-variable-in-one-command.yml"), dir: DUMMY_RAILS_DIR)
+
+    command = runner.commands[0]
+    assert_equal({ "ENV_VAR" => "env value" }, command.env)
+    assert_equal "command", command.name
+    assert_equal ["with_env"], command.args
+
+    command = runner.commands[1]
+    assert_equal({}, command.env)
+    assert_equal "command", command.name
+    assert_equal ["without_env"], command.args
   end
 
-  test "customized with environment variable in one command merges with env" do
+  test "environment variable in one command merges with env" do
+    runner = RailsPackager::Runner.new(config: config_file("environment-variable-in-one-command-merges-with-env.yml"), dir: DUMMY_RAILS_DIR)
+
+    command = runner.commands[0]
+    assert_equal({ "EXAMPLE" => "value", "ENV_VAR" => "env value", "OTHER" => "other value" }, command.env)
+    assert_equal "command", command.name
+    assert_equal ["with_env"], command.args
+
+    command = runner.commands[1]
+    assert_equal({ "EXAMPLE" => "value", "ENV_VAR" => "will be overridden" }, command.env)
+    assert_equal "command", command.name
+    assert_equal ["without_env"], command.args
   end
 
-  test "customized with environment variable replacement" do
+  test "environment variable replacement" do
   end
 
-  test "customized with quotes in command" do
+  test "quotes in command" do
+    runner = RailsPackager::Runner.new(config: config_file("quotes-in-command.yml"), dir: DUMMY_RAILS_DIR)
+
+    command = runner.commands[0]
+    assert_equal "/bin/whenever however/whatever", command.name
+    assert_equal ["some", %(arguments "listed"), "with", "quotes"], command.args
   end
 
-  test "invalid customization: @{files} is not its own argument" do
+  test "@{files} not its own argument" do
+    assert_raises(ArgumentError) do
+      runner = RailsPackager::Runner.new(config: config_file("files-not-its-own-argument.yml"), dir: DUMMY_RAILS_DIR)
+      runner.commands[0].args
+    end
   end
 
-  test "invalid customization: @{files} is within quotes" do
+  test "@{files} is within quotes" do
+    assert_raises(ArgumentError) do
+      runner = RailsPackager::Runner.new(config: config_file("files-is-within-quotes.yml"), dir: DUMMY_RAILS_DIR)
+      runner.commands[0].args
+    end
   end
 end

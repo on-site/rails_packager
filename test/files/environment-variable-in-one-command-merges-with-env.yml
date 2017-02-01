@@ -1,0 +1,8 @@
+env:
+  EXAMPLE: value
+  ENV_VAR: will be overridden
+before:
+- - ENV_VAR: env value
+    OTHER: other value
+  - command with_env
+- command without_env

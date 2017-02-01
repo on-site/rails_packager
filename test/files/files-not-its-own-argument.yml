@@ -1,0 +1,2 @@
+before:
+- echo @{files}.not.own.argument

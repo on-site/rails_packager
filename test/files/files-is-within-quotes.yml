@@ -1,0 +1,2 @@
+before:
+- echo "@{files} is within quotes"
