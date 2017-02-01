@@ -1,0 +1,2 @@
+module RailsPackager
+end
