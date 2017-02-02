@@ -1,0 +1,6 @@
+before:
+- echo Before one
+- 'false'
+package: echo Packaging should not run
+after:
+- echo After should not run

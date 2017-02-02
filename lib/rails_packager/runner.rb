@@ -43,6 +43,24 @@ module RailsPackager
       before + [package] + after
     end
 
+    def execute(verbose: false)
+      commands.each { |cmd| break unless cmd.execute(verbose: verbose) }
+    end
+
+    def successful?
+      commands.all?(&:successful?)
+    end
+
+    def exit_code
+      errored = commands.find { |cmd| !cmd.successful? }
+
+      if errored
+        errored.exit_code
+      else
+        0
+      end
+    end
+
     private
 
     def replace_variables(value)

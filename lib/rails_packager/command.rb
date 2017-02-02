@@ -47,6 +47,25 @@ module RailsPackager
       end.flatten
     end
 
+    def execute(verbose: false)
+      command_name = name
+      command_args = args
+      command_line = ([command_name] + command_args).join(" ")
+      puts "$ #{command_line}" if verbose
+      system(env, command_name, *command_args)
+      @status = $?
+      STDERR.puts "ERROR: '#{command_line}' returned error code: #{exit_code}" unless successful?
+      successful?
+    end
+
+    def exit_code
+      @status.exitstatus
+    end
+
+    def successful?
+      @status.success?
+    end
+
     private
 
     def replace_variables(value, allow_files: false)
