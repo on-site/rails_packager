@@ -1,0 +1,5 @@
+name: ''
+before:
+- '"" missing name'
+- "@{name} missing name"
+- "${EMPTY_COMMAND_NAME} missing name"

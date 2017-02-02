@@ -1,7 +1,5 @@
 module RailsPackager
   class Command
-    attr_reader :name
-
     def self.replace_variables(runner, value, allow_files: false)
       result = value.dup
       result.gsub!(/\$\{(\w+)\}/) { |m| ENV.fetch($1, "") }
@@ -25,6 +23,11 @@ module RailsPackager
       @name = replace_variables(name)
       @args = args
       @env = env
+    end
+
+    def name
+      raise ArgumentError, "Invalid command: empty command name is not valid" if @name.blank?
+      @name
     end
 
     def dir

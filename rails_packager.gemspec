@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.email       = ["mike@virata-stone.com"]
   s.homepage    = "https://github.com/on-site/rails_packager"
   s.summary     = "Rails engine to provide tools to package your application"
-  s.description = "This gem provides a way to package your Rails app in a gzipped file"
+  s.description = "This is an exceedingly over-engineered gem that provides a way to package your Rails app in a gzipped file"
   s.license     = "MIT"
 
   s.files = Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.rdoc"]

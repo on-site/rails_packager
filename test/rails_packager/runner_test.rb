@@ -131,9 +131,12 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
   end
 
   test "missing command name" do
-  end
+    ENV["EMPTY_COMMAND_NAME"] = ""
+    runner = RailsPackager::Runner.new(config_file: config_file("missing-command-name.yml"), dir: DUMMY_RAILS_DIR)
 
-  test "missing command name from environment variable" do
+    assert_raises(ArgumentError) { runner.commands[0].name }
+    assert_raises(ArgumentError) { runner.commands[1].name }
+    assert_raises(ArgumentError) { runner.commands[2].name }
   end
 
   test "quotes in command" do
@@ -152,9 +155,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
   end
 
   test "@{files} is within quotes" do
-    assert_raises(ArgumentError) do
-      runner = RailsPackager::Runner.new(config_file: config_file("files-is-within-quotes.yml"), dir: DUMMY_RAILS_DIR)
-      runner.commands[0].args
-    end
+    runner = RailsPackager::Runner.new(config_file: config_file("files-is-within-quotes.yml"), dir: DUMMY_RAILS_DIR)
+    assert_raises(ArgumentError) { runner.commands[0].args }
   end
 end
