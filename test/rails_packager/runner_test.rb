@@ -28,7 +28,6 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
       runner.execute(verbose: true)
     end
 
-
     assert_equal strip_whitespace(<<-END), out
       $ echo Before one
       Before one
@@ -43,6 +42,24 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
     END
     assert_equal "", err
     assert runner.successful?
+  end
+
+  test "integration from rails project" do
+    out, err = capture_subprocess_io do
+      system "cd '#{DUMMY_RAILS_DIR}' && rake package"
+    end
+
+    status = $?
+
+    assert_equal strip_whitespace(<<-END), out
+      Before one
+      Before two
+      Packaging
+      After one
+      After two
+    END
+    assert_equal "", err
+    assert status.success?
   end
 
   test "failure integration" do
