@@ -110,15 +110,21 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
     runner = RailsPackager::Runner.new(dir: DUMMY_RAILS_DIR)
     assert_equal ["**/.git"], runner.excludes
     assert_equal nil, runner.includes
-    assert_equal 2, runner.commands.size
+    assert_equal 3, runner.commands.size
 
     command = runner.commands[0]
+    assert_equal({}, command.env)
+    assert_equal DUMMY_RAILS_DIR, command.dir
+    assert_equal "bundle", command.name
+    assert_equal ["install", "--deployment", "--without", "development", "test"], command.args
+
+    command = runner.commands[1]
     assert_equal({ "RAILS_ENV" => "production" }, command.env)
     assert_equal DUMMY_RAILS_DIR, command.dir
     assert_equal "bundle", command.name
     assert_equal ["exec", "rake", "assets:precompile"], command.args
 
-    command = runner.commands[1]
+    command = runner.commands[2]
     assert_equal({}, command.env)
     assert_equal DUMMY_RAILS_DIR, command.dir
     assert_equal "tar", command.name

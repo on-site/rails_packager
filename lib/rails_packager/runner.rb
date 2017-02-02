@@ -8,6 +8,7 @@ module RailsPackager
       env: {},
       exclude: ["**/.git".freeze].freeze,
       before: [
+        "bundle install --deployment --without development test".freeze,
         [{ "RAILS_ENV".freeze => "production".freeze }, "bundle exec rake assets:precompile".freeze].freeze
       ],
       package: "tar --no-recursion -zcvf @{name}.tar.gz @{files}".freeze
