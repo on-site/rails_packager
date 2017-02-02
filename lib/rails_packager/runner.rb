@@ -13,12 +13,12 @@ module RailsPackager
       package: "tar --no-recursion -zcvf @{name}.tar.gz @{files}".freeze
     }.freeze
 
-    def initialize(opts)
-      @dir = opts.fetch(:dir)
+    def initialize(dir:, config_file: nil)
+      @dir = dir
 
       config =
-        if opts[:config]
-          YAML.load_file(opts[:config])
+        if config_file
+          YAML.load_file(config_file)
         else
           DEFAULT_CONFIG
         end
@@ -45,12 +45,21 @@ module RailsPackager
 
     private
 
+    def replace_variables(value)
+      RailsPackager::Command.replace_variables(self, value)
+    end
+
     def load_config(config)
       config = DEFAULT_CONFIG.merge(config.symbolize_keys)
       @includes = config[:include]
       @excludes = config[:exclude]
-      @env = config[:env]
-      @name = config.fetch(:name) { File.basename(File.realpath(dir)) }
+
+      @env = config[:env].inject({}) do |result, (key, value)|
+        result[key] = replace_variables(value)
+        result
+      end
+
+      @name = replace_variables(config.fetch(:name) { File.basename(File.realpath(dir)) })
       @before = config.fetch(:before, []).map { |x| RailsPackager::Command.parse(self, x) }
       @after = config.fetch(:after, []).map { |x| RailsPackager::Command.parse(self, x) }
       @package = RailsPackager::Command.parse(self, config[:package])

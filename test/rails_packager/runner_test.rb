@@ -35,7 +35,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
   end
 
   test "fully customized" do
-    runner = RailsPackager::Runner.new(config: config_file("fully-customized.yml"), dir: DUMMY_RAILS_DIR)
+    runner = RailsPackager::Runner.new(config_file: config_file("fully-customized.yml"), dir: DUMMY_RAILS_DIR)
     assert_equal ["log/**/*"], runner.excludes
     assert_equal nil, runner.includes
     assert_equal 5, runner.commands.size
@@ -86,7 +86,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
   end
 
   test "environment variable in one command" do
-    runner = RailsPackager::Runner.new(config: config_file("environment-variable-in-one-command.yml"), dir: DUMMY_RAILS_DIR)
+    runner = RailsPackager::Runner.new(config_file: config_file("environment-variable-in-one-command.yml"), dir: DUMMY_RAILS_DIR)
 
     command = runner.commands[0]
     assert_equal({ "ENV_VAR" => "env value" }, command.env)
@@ -100,7 +100,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
   end
 
   test "environment variable in one command merges with env" do
-    runner = RailsPackager::Runner.new(config: config_file("environment-variable-in-one-command-merges-with-env.yml"), dir: DUMMY_RAILS_DIR)
+    runner = RailsPackager::Runner.new(config_file: config_file("environment-variable-in-one-command-merges-with-env.yml"), dir: DUMMY_RAILS_DIR)
 
     command = runner.commands[0]
     assert_equal({ "EXAMPLE" => "value", "ENV_VAR" => "env value", "OTHER" => "other value" }, command.env)
@@ -114,10 +114,30 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
   end
 
   test "environment variable replacement" do
+    ENV["NAME_ENV"] = "name-value"
+    ENV["ENV_VALUE"] = "env-value"
+    ENV["OTHER_ENV_VALUE"] = "other-env-value"
+    ENV["COMMAND_VALUE"] = "some-command"
+    ENV["ARGUMENT_VALUE"] = "argument value"
+
+    runner = RailsPackager::Runner.new(config_file: config_file("environment-variable-replacement.yml"), dir: DUMMY_RAILS_DIR)
+    assert_equal "name-name-value", runner.name
+    assert_equal({ "EXAMPLE" => "env env-value" }, runner.env)
+
+    command = runner.commands[0]
+    assert_equal({ "EXAMPLE" => "env env-value", "OTHER_EXAMPLE" => "env other-env-value" }, command.env)
+    assert_equal "some-command", command.name
+    assert_equal ["and", "argument value", "and", "missing--between"], command.args
+  end
+
+  test "missing command name" do
+  end
+
+  test "missing command name from environment variable" do
   end
 
   test "quotes in command" do
-    runner = RailsPackager::Runner.new(config: config_file("quotes-in-command.yml"), dir: DUMMY_RAILS_DIR)
+    runner = RailsPackager::Runner.new(config_file: config_file("quotes-in-command.yml"), dir: DUMMY_RAILS_DIR)
 
     command = runner.commands[0]
     assert_equal "/bin/whenever however/whatever", command.name
@@ -126,14 +146,14 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
 
   test "@{files} not its own argument" do
     assert_raises(ArgumentError) do
-      runner = RailsPackager::Runner.new(config: config_file("files-not-its-own-argument.yml"), dir: DUMMY_RAILS_DIR)
+      runner = RailsPackager::Runner.new(config_file: config_file("files-not-its-own-argument.yml"), dir: DUMMY_RAILS_DIR)
       runner.commands[0].args
     end
   end
 
   test "@{files} is within quotes" do
     assert_raises(ArgumentError) do
-      runner = RailsPackager::Runner.new(config: config_file("files-is-within-quotes.yml"), dir: DUMMY_RAILS_DIR)
+      runner = RailsPackager::Runner.new(config_file: config_file("files-is-within-quotes.yml"), dir: DUMMY_RAILS_DIR)
       runner.commands[0].args
     end
   end

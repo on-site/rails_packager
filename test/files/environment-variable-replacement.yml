@@ -1,0 +1,6 @@
+name: name-${NAME_ENV}
+env:
+  EXAMPLE: env ${ENV_VALUE}
+before:
+- - OTHER_EXAMPLE: env ${OTHER_ENV_VALUE}
+  - ${COMMAND_VALUE} and ${ARGUMENT_VALUE} and missing-${MISSING_ARGUMENT_ENV_VARIABLE}-between
