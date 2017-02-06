@@ -3,6 +3,21 @@ require "test_helper"
 class RailsPackager::RunnerTest < ActiveSupport::TestCase
   include RailsPackager::FileHelper
 
+  test "execution path" do
+    runner = RailsPackager::Runner.new(config_file: config_file("execution-path.yml"), dir: DUMMY_RAILS_DIR)
+
+    out, err = capture_subprocess_io do
+      runner.execute
+    end
+
+    assert_equal strip_whitespace(<<-END), out
+      #{DUMMY_RAILS_DIR}
+      Packaging
+    END
+    assert_equal "", err
+    assert runner.successful?
+  end
+
   test "simple integration" do
     runner = RailsPackager::Runner.new(config_file: config_file("simple-integration.yml"), dir: DUMMY_RAILS_DIR)
 

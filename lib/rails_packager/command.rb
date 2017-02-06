@@ -52,7 +52,7 @@ module RailsPackager
       command_args = args
       command_line = ([command_name] + command_args).join(" ")
       puts "$ #{command_line}" if verbose
-      system(env, command_name, *command_args)
+      system(env, command_name, *command_args, chdir: dir)
       @status = $?
       STDERR.puts "ERROR: '#{command_line}' returned error code: #{exit_code}" unless successful?
       successful?
