@@ -143,6 +143,49 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
     refute_includes runner.files, "config/.."
   end
 
+  test "no customization with jbundler" do
+    runner = RailsPackager::Runner.new(dir: DUMMY_JRUBY_RAILS_DIR)
+    assert_equal ["**/.git"], runner.excludes
+    assert_equal nil, runner.includes
+    assert_equal 4, runner.commands.size
+
+    command = runner.commands[0]
+    assert_equal({}, command.env)
+    assert_equal DUMMY_JRUBY_RAILS_DIR, command.dir
+    assert_equal "bundle", command.name
+    assert_equal ["install", "--deployment", "--without", "development", "test"], command.args
+
+    command = runner.commands[1]
+    assert_equal({}, command.env)
+    assert_equal DUMMY_JRUBY_RAILS_DIR, command.dir
+    assert_equal "jbundle", command.name
+    assert_equal ["install", "--vendor"], command.args
+
+    command = runner.commands[2]
+    assert_equal({ "RAILS_ENV" => "production" }, command.env)
+    assert_equal DUMMY_JRUBY_RAILS_DIR, command.dir
+    assert_equal "bundle", command.name
+    assert_equal ["exec", "rake", "assets:precompile"], command.args
+
+    command = runner.commands[3]
+    assert_equal({}, command.env)
+    assert_equal DUMMY_JRUBY_RAILS_DIR, command.dir
+    assert_equal "tar", command.name
+    assert_equal ["--no-recursion", "-zcvf", "jruby_dummy.tar.gz", *runner.files], command.args
+
+    # Test a few files that should be included
+    assert_includes runner.files, "log/.keep"
+    assert_includes runner.files, "config/routes.rb"
+    assert_includes runner.files, "app/controllers/application_controller.rb"
+
+    # Includes directories
+    assert_includes runner.files, "config"
+
+    # Doesn't include special directories
+    refute_includes runner.files, "config/."
+    refute_includes runner.files, "config/.."
+  end
+
   test "fully customized" do
     runner = RailsPackager::Runner.new(config_file: config_file("fully-customized.yml"), dir: DUMMY_RAILS_DIR)
     assert_equal ["log/**/*"], runner.excludes

@@ -5,6 +5,7 @@ require File.expand_path("../../test/dummy/config/environment.rb",  __FILE__)
 ActiveRecord::Migrator.migrations_paths = [File.expand_path("../../test/dummy/db/migrate", __FILE__)]
 require "rails/test_help"
 DUMMY_RAILS_DIR = File.realpath File.expand_path("../dummy", __FILE__)
+DUMMY_JRUBY_RAILS_DIR = File.realpath File.expand_path("../jruby_dummy", __FILE__)
 
 # Filter out Minitest backtrace while allowing backtrace from other libraries
 # to be shown.

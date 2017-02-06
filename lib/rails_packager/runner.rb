@@ -4,13 +4,16 @@ module RailsPackager
   class Runner
     attr_reader :includes, :excludes, :env, :dir, :name, :before, :package, :after
 
+    # This command is inserted after bundle install when jbundler usage is detected
+    JBUNDLE_COMMAND = "jbundle install --vendor".freeze
+
     DEFAULT_CONFIG = {
-      env: {},
+      env: {}.freeze,
       exclude: ["**/.git".freeze].freeze,
       before: [
         "bundle install --deployment --without development test".freeze,
         [{ "RAILS_ENV".freeze => "production".freeze }, "bundle exec rake assets:precompile".freeze].freeze
-      ],
+      ].freeze,
       package: "tar --no-recursion -zcvf @{name}.tar.gz @{files}".freeze
     }.freeze
 
@@ -21,7 +24,7 @@ module RailsPackager
         if config_file
           YAML.load_file(config_file)
         else
-          DEFAULT_CONFIG
+          {}
         end
 
       load_config(config)
@@ -69,7 +72,14 @@ module RailsPackager
     end
 
     def load_config(config)
+      customized_before = config.include?(:before)
       config = DEFAULT_CONFIG.merge(config.symbolize_keys)
+
+      if !customized_before && jbundler_in_use?
+        config[:before] = config[:before].dup
+        config[:before].insert(1, JBUNDLE_COMMAND)
+      end
+
       @includes = config[:include]
       @excludes = config[:exclude]
 
@@ -82,6 +92,10 @@ module RailsPackager
       @before = config.fetch(:before, []).map { |x| RailsPackager::Command.parse(self, x) }
       @after = config.fetch(:after, []).map { |x| RailsPackager::Command.parse(self, x) }
       @package = RailsPackager::Command.parse(self, config[:package])
+    end
+
+    def jbundler_in_use?
+      File.exist? File.join(dir, "Jarfile")
     end
   end
 end
