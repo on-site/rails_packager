@@ -125,7 +125,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
     runner = RailsPackager::Runner.new(dir: DUMMY_RAILS_DIR)
     assert_equal ["**/.git"], runner.excludes
     assert_equal nil, runner.includes
-    assert_equal 3, runner.commands.size
+    assert_equal 4, runner.commands.size
 
     command = runner.commands[0]
     assert_equal({}, command.env)
@@ -134,12 +134,18 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
     assert_equal ["install", "--deployment", "--without", "development", "test"], command.args
 
     command = runner.commands[1]
+    assert_equal({}, command.env)
+    assert_equal DUMMY_RAILS_DIR, command.dir
+    assert_equal "gem", command.name
+    assert_equal ["install", "bundler", "--install-dir", "vendor/bundle"], command.args
+
+    command = runner.commands[2]
     assert_equal({ "RAILS_ENV" => "production" }, command.env)
     assert_equal DUMMY_RAILS_DIR, command.dir
     assert_equal "bundle", command.name
     assert_equal ["exec", "rake", "assets:precompile"], command.args
 
-    command = runner.commands[2]
+    command = runner.commands[3]
     assert_equal({}, command.env)
     assert_equal DUMMY_RAILS_DIR, command.dir
     assert_equal "tar", command.name
@@ -162,7 +168,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
     runner = RailsPackager::Runner.new(dir: DUMMY_JRUBY_RAILS_DIR)
     assert_equal ["**/.git"], runner.excludes
     assert_equal nil, runner.includes
-    assert_equal 4, runner.commands.size
+    assert_equal 5, runner.commands.size
 
     command = runner.commands[0]
     assert_equal({}, command.env)
@@ -173,16 +179,22 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
     command = runner.commands[1]
     assert_equal({}, command.env)
     assert_equal DUMMY_JRUBY_RAILS_DIR, command.dir
+    assert_equal "gem", command.name
+    assert_equal ["install", "bundler", "--install-dir", "vendor/bundle"], command.args
+
+    command = runner.commands[2]
+    assert_equal({}, command.env)
+    assert_equal DUMMY_JRUBY_RAILS_DIR, command.dir
     assert_equal "jbundle", command.name
     assert_equal ["install", "--vendor"], command.args
 
-    command = runner.commands[2]
+    command = runner.commands[3]
     assert_equal({ "RAILS_ENV" => "production" }, command.env)
     assert_equal DUMMY_JRUBY_RAILS_DIR, command.dir
     assert_equal "bundle", command.name
     assert_equal ["exec", "rake", "assets:precompile"], command.args
 
-    command = runner.commands[3]
+    command = runner.commands[4]
     assert_equal({}, command.env)
     assert_equal DUMMY_JRUBY_RAILS_DIR, command.dir
     assert_equal "tar", command.name

@@ -12,6 +12,7 @@ module RailsPackager
       exclude: ["**/.git".freeze].freeze,
       before: [
         "bundle install --deployment --without development test".freeze,
+        "gem install bundler --install-dir vendor/bundle".freeze,
         [{ "RAILS_ENV".freeze => "production".freeze }, "bundle exec rake assets:precompile".freeze].freeze
       ].freeze,
       package: "tar --no-recursion -zcvf @{name}.tar.gz @{files}".freeze
@@ -77,7 +78,7 @@ module RailsPackager
 
       if !customized_before && jbundler_in_use?
         config[:before] = config[:before].dup
-        config[:before].insert(1, JBUNDLE_COMMAND)
+        config[:before].insert(2, JBUNDLE_COMMAND)
       end
 
       @includes = config[:include]
