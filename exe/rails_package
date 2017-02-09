@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+require "pathname"
+require "rails_packager"
+
+abort "No Gemfile detected, are you in the root of a Rails project?" unless File.exist?("Gemfile")
+abort "The 'rails' gem is missing from the Gemfile, are you in the root of a Rails project?" unless File.read("Gemfile") =~ /\brails\b/
+dir = Pathname.new(".").realpath
+config_path = dir.join(".rails-package")
+config_file = config_path if config_path.exist?
+runner = RailsPackager::Runner.new(config_file: config_file, dir: dir)
+runner.execute

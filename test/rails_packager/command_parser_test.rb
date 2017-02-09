@@ -9,8 +9,22 @@ class RailsPackager::CommandParserTest < ActiveSupport::TestCase
   end
 
   test "command with env" do
-    parsed = RailsPackager::CommandParser.parse([{ "ENV_VAR" => "value" }, "cmd"])
+    parsed = RailsPackager::CommandParser.parse(["cmd", { "env" => { "ENV_VAR" => "value" } }])
     assert_equal({ "ENV_VAR" => "value" }, parsed.env)
+    assert_equal "cmd", parsed.name
+    assert_equal [], parsed.args
+  end
+
+  test "command with unsetenv" do
+    parsed = RailsPackager::CommandParser.parse(["cmd", { "unsetenv" => ["ENV_VAR"] }])
+    assert_equal({ "ENV_VAR" => nil }, parsed.env)
+    assert_equal "cmd", parsed.name
+    assert_equal [], parsed.args
+  end
+
+  test "command with env and unsetenv" do
+    parsed = RailsPackager::CommandParser.parse(["cmd", { "unsetenv" => ["ENV_VAR", "OTHER_ENV_VAR"], "env" => { "ENV_VAR" => "value" } }])
+    assert_equal({ "ENV_VAR" => "value", "OTHER_ENV_VAR" => nil }, parsed.env)
     assert_equal "cmd", parsed.name
     assert_equal [], parsed.args
   end

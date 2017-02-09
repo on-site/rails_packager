@@ -1,0 +1,2 @@
+# This is a fake Gemfile to make this project look like a Rails project
+gem "rails"

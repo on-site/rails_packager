@@ -7,6 +7,7 @@ module RailsPackager
     end
 
     def initialize(command)
+      @parsed = false
       @unparsed = command
     end
 
@@ -16,8 +17,8 @@ module RailsPackager
 
       result =
         if @unparsed.is_a?(Array)
-          @env = @unparsed.first
-          parse_command(@unparsed.last)
+          @env = parse_env(@unparsed.last)
+          parse_command(@unparsed.first)
         else
           @env = {}
           parse_command(@unparsed)
@@ -29,6 +30,20 @@ module RailsPackager
     end
 
     private
+
+    def parse_env(options)
+      {}.tap do |result|
+        if options.include?("unsetenv")
+          options["unsetenv"].each do |var|
+            result[var] = nil
+          end
+        end
+
+        if options.include?("env")
+          result.merge!(options["env"])
+        end
+      end
+    end
 
     def parse_command(command, result = [])
       command = command.strip

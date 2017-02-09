@@ -1,4 +1,5 @@
 before:
-- - ENV_VAR: env value
-  - command with_env
+- - command with_env
+  - env:
+      ENV_VAR: env value
 - command without_env

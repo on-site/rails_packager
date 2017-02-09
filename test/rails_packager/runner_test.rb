@@ -2,9 +2,11 @@ require "test_helper"
 
 class RailsPackager::RunnerTest < ActiveSupport::TestCase
   include RailsPackager::FileHelper
+  setup { @runner = nil }
+  teardown { @runner.close if @runner }
 
   test "execution path" do
-    runner = RailsPackager::Runner.new(config_file: config_file("execution-path.yml"), dir: DUMMY_RAILS_DIR)
+    runner = new_runner(config_file: config_file("execution-path.yml"), dir: DUMMY_RAILS_DIR)
 
     out, err = capture_subprocess_io do
       runner.execute
@@ -19,7 +21,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
   end
 
   test "simple integration" do
-    runner = RailsPackager::Runner.new(config_file: config_file("simple-integration.yml"), dir: DUMMY_RAILS_DIR)
+    runner = new_runner(config_file: config_file("simple-integration.yml"), dir: DUMMY_RAILS_DIR)
 
     out, err = capture_subprocess_io do
       runner.execute
@@ -37,7 +39,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
   end
 
   test "simple integration with verbose" do
-    runner = RailsPackager::Runner.new(config_file: config_file("simple-integration.yml"), dir: DUMMY_RAILS_DIR)
+    runner = new_runner(config_file: config_file("simple-integration.yml"), dir: DUMMY_RAILS_DIR)
 
     out, err = capture_subprocess_io do
       runner.execute(verbose: true)
@@ -77,8 +79,26 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
     assert status.success?
   end
 
+  test "integration from rails project with program form" do
+    out, err = capture_subprocess_io do
+      system "cd '#{DUMMY_RAILS_DIR}' && rails_package"
+    end
+
+    status = $?
+
+    assert_equal strip_whitespace(<<-END), out
+      Before one
+      Before two
+      Packaging
+      After one
+      After two
+    END
+    assert_equal "", err
+    assert status.success?
+  end
+
   test "failure integration" do
-    runner = RailsPackager::Runner.new(config_file: config_file("failure-integration.yml"), dir: DUMMY_RAILS_DIR)
+    runner = new_runner(config_file: config_file("failure-integration.yml"), dir: DUMMY_RAILS_DIR)
 
     out, err = capture_subprocess_io do
       runner.execute
@@ -99,7 +119,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
   end
 
   test "failure integration with verbose" do
-    runner = RailsPackager::Runner.new(config_file: config_file("failure-integration.yml"), dir: DUMMY_RAILS_DIR)
+    runner = new_runner(config_file: config_file("failure-integration.yml"), dir: DUMMY_RAILS_DIR)
 
     out, err = capture_subprocess_io do
       runner.execute(verbose: true)
@@ -122,13 +142,13 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
   end
 
   test "no customization" do
-    runner = RailsPackager::Runner.new(dir: DUMMY_RAILS_DIR)
-    assert_equal ["**/.git"], runner.excludes
-    assert_equal nil, runner.includes
+    runner = new_runner(dir: DUMMY_RAILS_DIR)
+    assert_equal ["**/.git", "tmp"], runner.excludes
+    assert_nil runner.includes
     assert_equal 4, runner.commands.size
 
     command = runner.commands[0]
-    assert_equal({}, command.env)
+    assert_equal({ "RUBYOPT" => nil, "RUBYLIB" => nil, "BUNDLER_ORIG_GEM_PATH" => nil, "BUNDLER_ORIG_PATH" => nil, "GEM_PATH" => ENV["BUNDLER_ORIG_GEM_PATH"] }, command.env)
     assert_equal DUMMY_RAILS_DIR, command.dir
     assert_equal "bundle", command.name
     assert_equal ["install", "--deployment", "--without", "development", "test"], command.args
@@ -140,7 +160,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
     assert_equal ["install", "bundler", "--install-dir", "vendor/bundle"], command.args
 
     command = runner.commands[2]
-    assert_equal({ "RAILS_ENV" => "production" }, command.env)
+    assert_equal({ "RUBYOPT" => nil, "RUBYLIB" => nil, "BUNDLER_ORIG_GEM_PATH" => nil, "BUNDLER_ORIG_PATH" => nil, "RAILS_ENV" => "production", "GEM_PATH" => ENV["BUNDLER_ORIG_GEM_PATH"] }, command.env)
     assert_equal DUMMY_RAILS_DIR, command.dir
     assert_equal "bundle", command.name
     assert_equal ["exec", "rake", "assets:precompile"], command.args
@@ -149,7 +169,8 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
     assert_equal({}, command.env)
     assert_equal DUMMY_RAILS_DIR, command.dir
     assert_equal "tar", command.name
-    assert_equal ["--no-recursion", "-zcvf", "dummy.tar.gz", *runner.files], command.args
+    assert_equal ["--no-recursion", "--files-from", runner.files_file, "-zcvf", "dummy.tar.gz"], command.args
+    assert_equal File.read(runner.files_file), runner.files.join("\n") + "\n"
 
     # Test a few files that should be included
     assert_includes runner.files, "log/.keep"
@@ -165,13 +186,13 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
   end
 
   test "no customization with jbundler" do
-    runner = RailsPackager::Runner.new(dir: DUMMY_JRUBY_RAILS_DIR)
-    assert_equal ["**/.git"], runner.excludes
-    assert_equal nil, runner.includes
+    runner = new_runner(dir: DUMMY_JRUBY_RAILS_DIR)
+    assert_equal ["**/.git", "tmp"], runner.excludes
+    assert_nil runner.includes
     assert_equal 5, runner.commands.size
 
     command = runner.commands[0]
-    assert_equal({}, command.env)
+    assert_equal({ "RUBYOPT" => nil, "RUBYLIB" => nil, "BUNDLER_ORIG_GEM_PATH" => nil, "BUNDLER_ORIG_PATH" => nil, "GEM_PATH" => ENV["BUNDLER_ORIG_GEM_PATH"] }, command.env)
     assert_equal DUMMY_JRUBY_RAILS_DIR, command.dir
     assert_equal "bundle", command.name
     assert_equal ["install", "--deployment", "--without", "development", "test"], command.args
@@ -189,7 +210,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
     assert_equal ["install", "--vendor"], command.args
 
     command = runner.commands[3]
-    assert_equal({ "RAILS_ENV" => "production" }, command.env)
+    assert_equal({ "RUBYOPT" => nil, "RUBYLIB" => nil, "BUNDLER_ORIG_GEM_PATH" => nil, "BUNDLER_ORIG_PATH" => nil, "RAILS_ENV" => "production", "GEM_PATH" => ENV["BUNDLER_ORIG_GEM_PATH"] }, command.env)
     assert_equal DUMMY_JRUBY_RAILS_DIR, command.dir
     assert_equal "bundle", command.name
     assert_equal ["exec", "rake", "assets:precompile"], command.args
@@ -198,7 +219,8 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
     assert_equal({}, command.env)
     assert_equal DUMMY_JRUBY_RAILS_DIR, command.dir
     assert_equal "tar", command.name
-    assert_equal ["--no-recursion", "-zcvf", "jruby_dummy.tar.gz", *runner.files], command.args
+    assert_equal ["--no-recursion", "--files-from", runner.files_file, "-zcvf", "jruby_dummy.tar.gz"], command.args
+    assert_equal File.read(runner.files_file), runner.files.join("\n") + "\n"
 
     # Test a few files that should be included
     assert_includes runner.files, "log/.keep"
@@ -214,9 +236,9 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
   end
 
   test "fully customized" do
-    runner = RailsPackager::Runner.new(config_file: config_file("fully-customized.yml"), dir: DUMMY_RAILS_DIR)
+    runner = new_runner(config_file: config_file("fully-customized.yml"), dir: DUMMY_RAILS_DIR)
     assert_equal ["log/**/*"], runner.excludes
-    assert_equal nil, runner.includes
+    assert_nil runner.includes
     assert_equal 5, runner.commands.size
 
     command = runner.commands[0]
@@ -265,7 +287,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
   end
 
   test "environment variable in one command" do
-    runner = RailsPackager::Runner.new(config_file: config_file("environment-variable-in-one-command.yml"), dir: DUMMY_RAILS_DIR)
+    runner = new_runner(config_file: config_file("environment-variable-in-one-command.yml"), dir: DUMMY_RAILS_DIR)
 
     command = runner.commands[0]
     assert_equal({ "ENV_VAR" => "env value" }, command.env)
@@ -279,7 +301,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
   end
 
   test "environment variable in one command merges with env" do
-    runner = RailsPackager::Runner.new(config_file: config_file("environment-variable-in-one-command-merges-with-env.yml"), dir: DUMMY_RAILS_DIR)
+    runner = new_runner(config_file: config_file("environment-variable-in-one-command-merges-with-env.yml"), dir: DUMMY_RAILS_DIR)
 
     command = runner.commands[0]
     assert_equal({ "EXAMPLE" => "value", "ENV_VAR" => "env value", "OTHER" => "other value" }, command.env)
@@ -299,7 +321,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
     ENV["COMMAND_VALUE"] = "some-command"
     ENV["ARGUMENT_VALUE"] = "argument value"
 
-    runner = RailsPackager::Runner.new(config_file: config_file("environment-variable-replacement.yml"), dir: DUMMY_RAILS_DIR)
+    runner = new_runner(config_file: config_file("environment-variable-replacement.yml"), dir: DUMMY_RAILS_DIR)
     assert_equal "name-name-value", runner.name
     assert_equal({ "EXAMPLE" => "env env-value" }, runner.env)
 
@@ -311,7 +333,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
 
   test "missing command name" do
     ENV["EMPTY_COMMAND_NAME"] = ""
-    runner = RailsPackager::Runner.new(config_file: config_file("missing-command-name.yml"), dir: DUMMY_RAILS_DIR)
+    runner = new_runner(config_file: config_file("missing-command-name.yml"), dir: DUMMY_RAILS_DIR)
 
     assert_raises(ArgumentError) { runner.commands[0].name }
     assert_raises(ArgumentError) { runner.commands[1].name }
@@ -319,7 +341,7 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
   end
 
   test "quotes in command" do
-    runner = RailsPackager::Runner.new(config_file: config_file("quotes-in-command.yml"), dir: DUMMY_RAILS_DIR)
+    runner = new_runner(config_file: config_file("quotes-in-command.yml"), dir: DUMMY_RAILS_DIR)
 
     command = runner.commands[0]
     assert_equal "/bin/whenever however/whatever", command.name
@@ -328,13 +350,19 @@ class RailsPackager::RunnerTest < ActiveSupport::TestCase
 
   test "@{files} not its own argument" do
     assert_raises(ArgumentError) do
-      runner = RailsPackager::Runner.new(config_file: config_file("files-not-its-own-argument.yml"), dir: DUMMY_RAILS_DIR)
+      runner = new_runner(config_file: config_file("files-not-its-own-argument.yml"), dir: DUMMY_RAILS_DIR)
       runner.commands[0].args
     end
   end
 
   test "@{files} is within quotes" do
-    runner = RailsPackager::Runner.new(config_file: config_file("files-is-within-quotes.yml"), dir: DUMMY_RAILS_DIR)
+    runner = new_runner(config_file: config_file("files-is-within-quotes.yml"), dir: DUMMY_RAILS_DIR)
     assert_raises(ArgumentError) { runner.commands[0].args }
+  end
+
+  private
+
+  def new_runner(*options)
+    @runner = RailsPackager::Runner.new(*options)
   end
 end

@@ -1,13 +1,22 @@
+require "active_support/core_ext/object/blank"
+
 module RailsPackager
   class Command
     def self.replace_variables(runner, value, allow_files: false)
+      return nil if value.nil?
       result = value.dup
       result.gsub!(/\$\{(\w+)\}/) { |m| ENV.fetch($1, "") }
       result["@{name}"] = runner.name if result["@{name}"]
 
       if allow_files
         raise ArgumentError, "@{files} must be a singular argument" if result["@{files}"] && result != "@{files}"
-        result = runner.files if result == "@{files}"
+        raise ArgumentError, "@{files_file} must be a singular argument" if result["@{files_file}"] && result != "@{files_file}"
+
+        if result == "@{files}"
+          result = runner.files
+        elsif result == "@{files_file}"
+          result = runner.files_file
+        end
       end
 
       result

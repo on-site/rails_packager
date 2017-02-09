@@ -14,10 +14,17 @@ Gem::Specification.new do |s|
   s.description = "This is an exceedingly over-engineered gem that provides a way to package your Rails app in a gzipped file"
   s.license     = "MIT"
 
-  s.files = Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.rdoc"]
+  s.files = Dir["{app,config,db,exe,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.rdoc"]
   s.test_files = Dir["test/**/*"]
 
-  s.add_dependency "rails", "~> 4.2.7.1"
+  s.bindir      = "exe"
+  s.executables = s.files.grep(%r{^exe/}) {|f| File.basename(f) }
 
-  s.add_development_dependency "sqlite3"
+  s.add_dependency "rails", ">= 4.0", "< 6.0"
+
+  if RUBY_PLATFORM == "java"
+    s.add_development_dependency "jdbc-sqlite3"
+  else
+    s.add_development_dependency "sqlite3"
+  end
 end
