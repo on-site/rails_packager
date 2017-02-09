@@ -1,11 +1,25 @@
 #!/usr/bin/env ruby
 require "pathname"
+require "optparse"
 require "rails_packager"
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: rails_package [options]"
+
+  opts.on("-v", "--verbose", "Include verbose output") do |v|
+    options[:verbose] = v
+  end
+
+  opts.on("-n", "--name NAME", "Change the NAME used for packaging the app") do |name|
+    options[:name] = name
+  end
+end.parse!
 
 abort "No Gemfile detected, are you in the root of a Rails project?" unless File.exist?("Gemfile")
 abort "The 'rails' gem is missing from the Gemfile, are you in the root of a Rails project?" unless File.read("Gemfile") =~ /\brails\b/
 dir = Pathname.new(".").realpath
 config_path = dir.join(".rails-package")
 config_file = config_path if config_path.exist?
-runner = RailsPackager::Runner.new(config_file: config_file, dir: dir)
-runner.execute
+runner = RailsPackager::Runner.new(config_file: config_file, dir: dir, name: options[:name])
+runner.execute(verbose: options[:verbose])

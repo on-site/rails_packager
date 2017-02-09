@@ -1,7 +1,7 @@
 before:
 - echo Before one
 - echo Before two
-package: echo Packaging
+package: echo Packaging @{name}
 after:
 - echo After one
 - echo After two

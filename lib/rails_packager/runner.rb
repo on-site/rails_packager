@@ -1,4 +1,5 @@
 require "active_support/core_ext/hash/keys"
+require "active_support/core_ext/object/blank"
 require "tempfile"
 require "yaml"
 
@@ -29,9 +30,10 @@ module RailsPackager
       package: "tar --no-recursion --files-from @{files_file} -zcvf @{name}.tar.gz"
     )
 
-    def initialize(dir:, config_file: nil)
+    def initialize(dir:, name: nil, config_file: nil)
       @files_file_tempfile = nil
       @dir = dir
+      @name = name
 
       config =
         if config_file
@@ -123,7 +125,7 @@ module RailsPackager
         result
       end
 
-      @name = replace_variables(config.fetch(:name) { File.basename(File.realpath(dir)) })
+      @name = name.presence || replace_variables(config.fetch(:name) { File.basename(File.realpath(dir)) })
       @before = config.fetch(:before, []).map { |x| RailsPackager::Command.parse(self, x) }
       @after = config.fetch(:after, []).map { |x| RailsPackager::Command.parse(self, x) }
       @package = RailsPackager::Command.parse(self, config[:package])

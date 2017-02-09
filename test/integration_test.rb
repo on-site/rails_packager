@@ -70,7 +70,48 @@ class IntegrationTest < ActiveSupport::TestCase
     assert_equal strip_whitespace(<<-END), out
       Before one
       Before two
-      Packaging
+      Packaging dummy
+      After one
+      After two
+    END
+    assert_equal "", err
+    assert status.success?
+  end
+
+  test "debug with rake task" do
+    out, err = capture_subprocess_io do
+      system "cd '#{DUMMY_RAILS_DIR}' && rake package verbose=true"
+    end
+
+    status = $?
+
+    assert_equal strip_whitespace(<<-END), out
+      $ echo Before one
+      Before one
+      $ echo Before two
+      Before two
+      $ echo Packaging dummy
+      Packaging dummy
+      $ echo After one
+      After one
+      $ echo After two
+      After two
+    END
+    assert_equal "", err
+    assert status.success?
+  end
+
+  test "change name with rake task" do
+    out, err = capture_subprocess_io do
+      system "cd '#{DUMMY_RAILS_DIR}' && rake package[customized-1.0.0]"
+    end
+
+    status = $?
+
+    assert_equal strip_whitespace(<<-END), out
+      Before one
+      Before two
+      Packaging customized-1.0.0
       After one
       After two
     END
@@ -88,7 +129,48 @@ class IntegrationTest < ActiveSupport::TestCase
     assert_equal strip_whitespace(<<-END), out
       Before one
       Before two
-      Packaging
+      Packaging dummy
+      After one
+      After two
+    END
+    assert_equal "", err
+    assert status.success?
+  end
+
+  test "program form with debug output" do
+    out, err = capture_subprocess_io do
+      system "cd '#{DUMMY_RAILS_DIR}' && rails_package -v"
+    end
+
+    status = $?
+
+    assert_equal strip_whitespace(<<-END), out
+      $ echo Before one
+      Before one
+      $ echo Before two
+      Before two
+      $ echo Packaging dummy
+      Packaging dummy
+      $ echo After one
+      After one
+      $ echo After two
+      After two
+    END
+    assert_equal "", err
+    assert status.success?
+  end
+
+  test "program form with customized name output" do
+    out, err = capture_subprocess_io do
+      system "cd '#{DUMMY_RAILS_DIR}' && rails_package --name customized-1.0.0"
+    end
+
+    status = $?
+
+    assert_equal strip_whitespace(<<-END), out
+      Before one
+      Before two
+      Packaging customized-1.0.0
       After one
       After two
     END
