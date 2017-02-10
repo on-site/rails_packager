@@ -70,6 +70,15 @@ package, and `@{files_file}` will generate a temporary file used during
 packaging that contains every file listed one per line (the path to this
 temporary file will be the expanded result).
 
+## JBundler
+
+If you have a `Jarfile` in your project, and you have not customized the
+`before` configuration, then `jbundler` will automatically be inserted after the
+bundle and installing of bundler with this command:
+```
+jbundle install --vendor
+```
+
 ## License
 
 This project rocks and uses MIT-LICENSE.
